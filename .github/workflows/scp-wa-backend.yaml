@@ -9,15 +9,18 @@ on:
     types: 
       - scp-wa-backend 
 
+env:
+  GL_PAT: ${{ secrets.GL_PAT }}
+  PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+  GIT_URL: ${{ github.event.client_payload.git_url }}
+  REPO: ${{ github.event.client_payload.repo_name }}
+  BRANCH: ${{ github.event.client_payload.branch }}
+  SHA: ${{ github.event.client_payload.sha }}
+  SERVICE: "swab"
+
 jobs:
   build:
     runs-on: ubuntu-18.04
-    env:
-      PAYLOAD: ${{ toJSON(github.event.client_payload) }}
-      GIT_URL: ${{ github.event.client_payload.git_url }}
-      BRANCH: ${{ github.event.client_payload.branch }}
-      REPO: ${{ github.event.client_payload.repo_name }}
-      GL_PAT: ${{ secrets.GL_PAT }}
     steps:
       - name: Checkout
         shell: bash
@@ -26,5 +29,47 @@ jobs:
         run: |
           git clone --depth $GIT_DEPTH --single-branch --branch $BRANCH https://oauth2:$GL_PAT@$GIT_URL .
 
-      - name: Test
-        run: ls -lah 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@master
+
+      - name: Docker login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-${{ env.SERVICE }}-buildx
+
+      - name: Get build date
+        id: build_date
+        run: echo "::set-output name=value::$(date +%FT%T%z)"
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        env:
+          IMAGE: "vietanhs0817/${{ env.SERVICE }}"
+          BUILD_DATE: "${{ steps.build_date.outputs.value }}"
+        with:
+          context: .
+          push: true
+          build-args: |
+            VERSION=${{ env.VERSION_TAG }}
+            GIT_HASH=${{ env.SHA }}
+            BUILD_DATE=${{ env.BUILD_DATE }}
+          labels: |
+            org.label-schema.schema-version=1.0
+            org.label-schema.vcs-ref=${{ env.SHA }}
+            org.label-schema.name=${{ env.SERVICE }}
+          tags: |
+            ${{ env.IMAGE }}:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Move Docker cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
