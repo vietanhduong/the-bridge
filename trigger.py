@@ -72,7 +72,8 @@ payload = {
     "git_url": f"gitlab.com/{env('CI_PROJECT_NAMESPACE')}/{REPO_NAME}.git",
     "repo_name": REPO_NAME,
     "branch": BRANCH,
-    "sha": COMMIT_HASH
+    "sha": COMMIT_HASH,
+    "depth": env("GIT_DEPTH")
   }
 }
 
