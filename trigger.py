@@ -59,6 +59,7 @@ def required(key: str) -> str:
 BRIDGE_REPO = "the-bridge"
 BRIDGE_OWNER = "vietanhduong"
 
+GIT_URL = env("CI_REPOSITORY_URL")
 REPO_NAME = required("CI_PROJECT_NAME")
 GH_PAT = required("GH_PAT")
 BRANCH = env("CI_COMMIT_BRANCH", "master")
@@ -67,6 +68,8 @@ COMMIT_HASH = env("CI_COMMIT_SHA")
 payload = {
   "event_type": REPO_NAME,
   "client_payload": {
+    "git_url": GIT_URL,
+    "repo_name": REPO_NAME,
     "branch": BRANCH,
     "sha": COMMIT_HASH
   }
