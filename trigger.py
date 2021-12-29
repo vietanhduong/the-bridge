@@ -36,7 +36,7 @@ def request(url: str, method: str = "GET", data=None, headers: dict = {}, insecu
 
         return {
             "code": res.getcode(),
-            "response": json.loads(res.read().decode("utf-8"))
+            "response": json.loads(res.read().decode("utf-8") or "{}")
         }
     except urllib.error.HTTPError as e:
         err(f"URL: {url}")
@@ -76,17 +76,17 @@ payload = {
   }
 }
 
-info(f"Payload: {payload}")
-
 headers = {
   "Accept": "application/vnd.github.v3+json",
   "Authorization": f"token {GH_PAT}"
 }
 
+info(f"Payload: {payload}")
 resp = request(f"https://api.github.com/repos/{BRIDGE_OWNER}/{BRIDGE_REPO}/dispatches",
                method="POST", 
                data=json.dumps(payload).encode("utf-8"), 
                headers=headers)
+
 if resp is None:
   exit(1)
 

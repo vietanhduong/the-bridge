@@ -15,7 +15,7 @@ jobs:
       run:
         working-directory: ${{ github.event.client_payload.repo_name }}
     env:
-      PAYLOAD: ${{ github.event.client_payload }}
+      PAYLOAD: ${{ toJSON(github.event.client_payload) }}
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout
@@ -24,7 +24,6 @@ jobs:
           GIT_URL: ${{ github.event.client_payload.git_url }}
           BRANCH: ${{ github.event.client_payload.branch }}
         run: |
-          GIT_URL="${GIT_URL#https://}"
           git clone https://oauth2:${{ secrets.GL_PAT }}@$GIT_URL
           git checkout $BRANCH
       
