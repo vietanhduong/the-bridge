@@ -33,6 +33,7 @@ def request(url: str, method: str = "GET", data=None, headers: dict = {}, insecu
             url, data=data, method=method, headers=headers)
         res = urllib.request.urlopen(
             req, context=ssl._create_unverified_context() if insecure else None)
+
         return {
             "code": res.getcode(),
             "response": json.loads(res.read().decode("utf-8"))
@@ -55,11 +56,11 @@ def required(key: str) -> str:
   if value is None: 
     err(f"${key} is required")
     exit(1)
-
+  return value 
+  
 BRIDGE_REPO = "the-bridge"
 BRIDGE_OWNER = "vietanhduong"
 
-GIT_URL = env("CI_REPOSITORY_URL")
 REPO_NAME = required("CI_PROJECT_NAME")
 GH_PAT = required("GH_PAT")
 BRANCH = env("CI_COMMIT_BRANCH", "master")
@@ -68,19 +69,24 @@ COMMIT_HASH = env("CI_COMMIT_SHA")
 payload = {
   "event_type": REPO_NAME,
   "client_payload": {
-    "git_url": GIT_URL,
+    "git_url": f"gitlab.com/{env('CI_PROJECT_NAMESPACE')}/{REPO_NAME}.git",
     "repo_name": REPO_NAME,
     "branch": BRANCH,
     "sha": COMMIT_HASH
   }
 }
 
+info(f"Payload: {payload}")
+
 headers = {
   "Accept": "application/vnd.github.v3+json",
   "Authorization": f"token {GH_PAT}"
 }
 
-resp = request(f"https://api.github.com/repos/{BRIDGE_OWNER}/{BRIDGE_REPO}/dispatches", method="POST", data=payload, headers=headers)
+resp = request(f"https://api.github.com/repos/{BRIDGE_OWNER}/{BRIDGE_REPO}/dispatches",
+               method="POST", 
+               data=json.dumps(payload).encode("utf-8"), 
+               headers=headers)
 if resp is None:
   exit(1)
 
