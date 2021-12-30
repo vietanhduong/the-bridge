@@ -25,5 +25,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-    
-  
+      - name: Notify to telegram 
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.telegram_bot_token }}
+          TELEGRAM_GROUP_ID: ${{ inputs.telegram_group_id }}
+          NEEDS_CONTEXT: ${{ inputs.needs_context }}
+          CLIENT_PAYLOAD: ${{ inputs.client_payload }}
+        run: ./notify.py 
+
