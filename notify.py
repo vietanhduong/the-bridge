@@ -13,8 +13,8 @@ def env(key: str, default="") -> str:
     return os.getenv(key) or default
 
 def err(msg, **kwargs):
+    exit_code = kwargs.pop('exit_code', None)
     print(f"ERROR: {msg}", file=sys.stderr, **kwargs)
-    exit_code = kwargs.get('exit_code')
     if exit_code is not None:
       exit(exit_code)
 
@@ -60,7 +60,7 @@ def handle_needs_context(key: str, repo_name: str) -> str:
   messages = []
   for key, value in needs_context.items():
     result = value.get("result", "unknown")
-    messages.append(f"*{key}*: {icons.get(result, 'unknown')} {result}") 
+    messages.append(f"*{key}*: `{icons.get(result, 'unknown')} {result.upper()}`") 
   
   return '\n'.join(messages)
 
@@ -96,19 +96,23 @@ git_url = client_payload.get("git_url")
 commit_message = client_payload.get("commit_message")
 commit_hash = client_payload.get("sha")
 
-template = f"""**[Bridge CI]** {repo_name}
+template = f"""*[Bridge CI]* `{repo_name.upper()}`
+---
 *Commit message*: {commit_message}
 *Commit hash*: [{format_commit_hash(commit_hash)}]({format_gitlab_url(git_url)}/-/commit/{commit_hash})
 ---
 {handle_needs_context("NEEDS_CONTEXT", repo_name)}
 ---
+*Repository:* [{repo_name}]({format_gitlab_url(git_url)})
 *Workflow:* [View Workflow]({WORKFLOW_URL})
 """
 
 payload = {
-  "chat_id": GROUP_ID,
+  "chat_id": "-1001737083204",
   "text": template,
   "parse_mode": "Markdown"
 }
 
-request(TELEGRAM_URI, method="POST", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+resp = request(TELEGRAM_URI, method="POST", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+if resp is None:
+  exit(1)

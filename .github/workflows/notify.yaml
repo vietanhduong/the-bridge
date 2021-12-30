@@ -7,16 +7,14 @@ on:
         description: the needs context
         required: true
         type: string
-      telegram_group_id:
-        required: true
-        type: string
       client_payload:
         required: true
         type: string
     secrets:
       telegram_bot_token: 
         required: true
-        type: string
+      telegram_group_id:
+        required: true
   
 jobs:
   notify:
@@ -28,7 +26,7 @@ jobs:
       - name: Notify to telegram 
         env:
           TELEGRAM_TOKEN: ${{ secrets.telegram_bot_token }}
-          TELEGRAM_GROUP_ID: ${{ inputs.telegram_group_id }}
+          TELEGRAM_GROUP_ID: ${{ secrets.telegram_group_id }}
           NEEDS_CONTEXT: ${{ inputs.needs_context }}
           CLIENT_PAYLOAD: ${{ inputs.client_payload }}
         run: ./notify.py 

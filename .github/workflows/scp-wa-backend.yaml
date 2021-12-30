@@ -74,6 +74,7 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   notify: 
+    name: notify
     if: always()
     needs:
       - build
@@ -81,7 +82,7 @@ jobs:
     with:
       needs_context: ${{ toJSON(needs) }}
       client_payload: ${{ toJSON(github.event.client_payload) }}
-      telegram_group_id: ${{ secrets.TELEGRAM_GROUP_ID }}
     secrets:
       telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      telegram_group_id: ${{ secrets.TELEGRAM_GROUP_ID }}
     
