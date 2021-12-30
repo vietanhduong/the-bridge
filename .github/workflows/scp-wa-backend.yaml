@@ -25,9 +25,8 @@ jobs:
       - name: Checkout
         shell: bash
         env:
-          GIT_DEPTH: ${{ github.event.client_payload.git_depth || 1 }}
-        run: |
-          git clone --depth $GIT_DEPTH --single-branch --branch $BRANCH https://oauth2:$GL_PAT@$GIT_URL .
+          GIT_DEPTH: 1
+        run: git clone --depth $GIT_DEPTH --single-branch --branch $BRANCH https://oauth2:$GL_PAT@$GIT_URL .
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@master
