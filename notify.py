@@ -123,7 +123,8 @@ template = f"""*[Bridge CI]* `{repo_name.upper()}`
 payload = {
   "chat_id": GROUP_ID,
   "text": template,
-  "parse_mode": "Markdown"
+  "parse_mode": "Markdown",
+  "disable_web_page_preview": False
 }
 
 resp = request(TELEGRAM_URI, method="POST", data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
