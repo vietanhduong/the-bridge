@@ -12,6 +12,9 @@ import urllib.request
 def env(key: str, default="") -> str:
     return os.getenv(key) or default
 
+def info(msg, **kwargs):
+    print(f"INFO: {msg}", file=sys.stdout, **kwargs)
+
 def err(msg, **kwargs):
     exit_code = kwargs.pop('exit_code', None)
     print(f"ERROR: {msg}", file=sys.stderr, **kwargs)
@@ -35,21 +38,7 @@ def parse_payload(key: str) -> dict:
       return None
     return json.loads(raw)
 
-def handle_needs_context(key: str, repo_name: str) -> str:
-  """
-    needs_context format:
-      {
-        "test": {
-          "result": "success",
-          "outputs": {}
-        },
-        "docker": {
-          "result": "failure",
-          "outputs": {}
-        }
-      }
-  """ 
-  needs_context = parse_payload(key) 
+def handle_needs_context(needs_context: dict, repo_name: str) -> str:
   icons = {
     "success": "✅",
     "failure": "❌",
@@ -63,6 +52,13 @@ def handle_needs_context(key: str, repo_name: str) -> str:
     messages.append(f"*{key}*: `{icons.get(result, 'unknown')} {result.upper()}`") 
   
   return '\n'.join(messages)
+
+def should_notify(needs_context: dict):
+  for key, value in needs_context.items():
+    result = value.get("result", "unknown")  
+    if result == "cancelled":
+      info(f"Job '{key}' is cancelled => Skip notify for Telegram")
+      exit(0)
 
 def format_gitlab_url(git_url: str) -> str:
   if git_url.endswith('.git'):
@@ -90,6 +86,23 @@ len(GROUP_ID) or err("$TELEGRAM_GROUP_ID is required", exit_code=1)
 TELEGRAM_URI = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 WORKFLOW_URL = f"https://github.com/{GITHUB_REPOSITORY}/actions/runs/{RUN_ID}"
 
+"""
+  needs_context format:
+    {
+      "test": {
+        "result": "success",
+        "outputs": {}
+      },
+      "docker": {
+        "result": "failure",
+        "outputs": {}
+      }
+    }
+""" 
+needs_context = parse_payload("NEEDS_CONTEXT") 
+should_notify(needs_context)
+
+
 client_payload = parse_payload("CLIENT_PAYLOAD")
 repo_name = client_payload.get("repo_name")
 git_url = client_payload.get("git_url")
@@ -101,14 +114,14 @@ template = f"""*[Bridge CI]* `{repo_name.upper()}`
 *Commit message*: {commit_message}
 *Commit hash*: [{format_commit_hash(commit_hash)}]({format_gitlab_url(git_url)}/-/commit/{commit_hash})
 ---
-{handle_needs_context("NEEDS_CONTEXT", repo_name)}
+{handle_needs_context(needs_context, repo_name)}
 ---
 *Repository:* [{repo_name}]({format_gitlab_url(git_url)})
 *Workflow:* [View Workflow]({WORKFLOW_URL})
 """
 
 payload = {
-  "chat_id": "-1001737083204",
+  "chat_id": GROUP_ID,
   "text": template,
   "parse_mode": "Markdown"
 }
