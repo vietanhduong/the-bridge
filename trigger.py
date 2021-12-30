@@ -19,11 +19,8 @@ def info(msg, **kwargs):
 
 def request(url: str, method: str = "GET", data=None, headers: dict = {}, insecure=False) -> dict:
     try:
-        req = urllib.request.Request(
-            url, data=data, method=method, headers=headers)
-        res = urllib.request.urlopen(
-            req, context=ssl._create_unverified_context() if insecure else None)
-
+        req = urllib.request.Request(url, data=data, method=method, headers=headers)
+        res = urllib.request.urlopen(req, context=ssl._create_unverified_context() if insecure else None)
         content = res.read().decode("utf-8") or "{}"
         return { "code": res.getcode(), "response": content }
     except urllib.error.HTTPError as e:
@@ -60,7 +57,8 @@ payload = {
     "repo_name": REPO_NAME,
     "branch": BRANCH,
     "sha": COMMIT_HASH,
-    "depth": env("GIT_DEPTH")
+    "depth": env("GIT_DEPTH"),
+    "commit_message": env("CI_COMMIT_MESSAGE", "#unknown_message")
   }
 }
 

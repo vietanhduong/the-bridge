@@ -14,7 +14,7 @@ env:
   PAYLOAD: ${{ toJSON(github.event.client_payload) }}
   GIT_URL: ${{ github.event.client_payload.git_url }}
   REPO: ${{ github.event.client_payload.repo_name }}
-  BRANCH: ${{ github.event.client_payload.branch }}
+  BRANCH: ${{ github.event.client_payload.branch || 'master' }}
   SHA: ${{ github.event.client_payload.sha }}
   SERVICE: "swab"
 
@@ -65,7 +65,7 @@ jobs:
             org.label-schema.vcs-ref=${{ env.SHA }}
             org.label-schema.name=${{ env.SERVICE }}
           tags: |
-            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ env.BRANCH }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
