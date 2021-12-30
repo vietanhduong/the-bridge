@@ -23,8 +23,17 @@ jobs:
         run: exit 1
 
   notify:
+    needs:
+      - test
+      - docker
     runs-on: ubuntu-18.04
-    if: failure()
+    if: always()
     steps:
       - name: Pass
-        run: echo "PASSED"
+        env:
+          CONTEXT: ${{ toJSON(needs) }}
+        run: |
+          echo "Test: ${{ needs.test.result }}"
+          echo "Docker: ${{ needs.docker.result }}"
+          
+          echo -n '${{ toJSON(needs) }}' | jq
