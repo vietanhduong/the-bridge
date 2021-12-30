@@ -1,0 +1,29 @@
+name: "Notifier"
+
+on:
+  workflow_call:
+    inputs:
+      needs_context:
+        description: the needs context
+        required: true
+        type: string
+      telegram_group_id:
+        required: true
+        type: string
+      client_payload:
+        required: true
+        type: string
+    secrets:
+      telegram_bot_token: 
+        required: true
+        type: string
+  
+jobs:
+  notify:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+    
+  
