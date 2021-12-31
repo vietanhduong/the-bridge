@@ -108,7 +108,7 @@ jobs:
         uses: appleboy/ssh-action@master
         env:
           IMAGE: "vietanhs0817/${{ env.SERVICE }}:${{ env.FORMATTED_BRANCH }}"
-          HOSTS: ${{ secrets.MAIN_AUTH_HOSTS }} 
+          HOSTS: ${{ secrets[format('{0}_AUTH_HOSTS', env.FORMATTED_BRANCH)]}} 
         with:
           host: ${{ env.HOSTS }}
           username: ${{ secrets.SSH_USERNAME }}
