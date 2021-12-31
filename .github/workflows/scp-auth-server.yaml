@@ -1,7 +1,7 @@
 name: "scp-auth-server"
 
 concurrency:  
-  group: ${{ github.event.client_payload.repo_name }}-${{ github.event.client_payload.branch || github.event.client_payload.sha }}
+  group: ${{ github.event.client_payload.repo_name }}-${{ github.event.client_payload.branch }}
   cancel-in-progress: true
 
 on:
@@ -19,7 +19,27 @@ env:
   SERVICE: "scp-auth"
 
 jobs:
+  prepare:
+    runs-on: ubuntu-18.04
+    outputs:
+      short_sha: ${{ steps.short_sha.outputs.value }}
+      formatted_branch: ${{ steps.formatted_branch.outputs.value }}
+    steps:
+      - name: Short SHA
+        shell: bash
+        id: short_sha
+        run: echo "::set-output name=value::$(echo "$SHA" | head -c7)" 
+
+      - name: Format current branch
+        shell: bash
+        id: formatted_branch
+        run: |
+          branch="$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/-$//g')"
+          echo "::set-output name=value::$branch"
+
   build:
+    needs:
+      - prepare
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout
@@ -52,6 +72,8 @@ jobs:
         env:
           IMAGE: "vietanhs0817/${{ env.SERVICE }}"
           BUILD_DATE: "${{ steps.build_date.outputs.value }}"
+          FORMATTED_BRANCH: ${{ needs.prepare.outputs.formatted_branch }}
+          SHORT_SHA: ${{ needs.prepare.outputs.short_sha }}
         with:
           context: .
           push: true
@@ -64,7 +86,8 @@ jobs:
             org.label-schema.vcs-ref=${{ env.SHA }}
             org.label-schema.name=${{ env.SERVICE }}
           tags: |
-            ${{ env.IMAGE }}:${{ env.BRANCH }}
+            ${{ env.IMAGE }}:${{ env.FORMATTED_BRANCH }}
+            ${{ env.IMAGE }}:${{ env.FORMATTED_BRANCH }}-${{ env.SHORT_SHA }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
@@ -75,14 +98,17 @@ jobs:
 
   deploy:
     needs:
+      - prepare
       - build
     runs-on: ubuntu-18.04
+    env:
+      FORMATTED_BRANCH: ${{ needs.prepare.outputs.formatted_branch }}
     steps:
       - name: 
         uses: appleboy/ssh-action@master
         env:
-          IMAGE: "vietanhs0817/${{ env.SERVICE }}:${{ env.BRANCH }}"
-          HOSTS: ${{ secrets[format('{0}_AUTH_HOSTS', env.BRANCH )] }} 
+          IMAGE: "vietanhs0817/${{ env.SERVICE }}:${{ env.FORMATTED_BRANCH }}"
+          HOSTS: ${{ secrets.MAIN_AUTH_HOSTS }} 
         with:
           host: ${{ env.HOSTS }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -97,6 +123,7 @@ jobs:
     name: notify
     if: always()
     needs:
+      - prepare
       - build
       - deploy
     uses: vietanhduong/the-bridge/.github/workflows/notify.yaml@main
