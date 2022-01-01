@@ -103,11 +103,12 @@ jobs:
     runs-on: ubuntu-18.04
     env:
       FORMATTED_BRANCH: ${{ needs.prepare.outputs.formatted_branch }}
+      SHORT_SHA: ${{ needs.prepare.outputs.short_sha }}
     steps:
       - name: 
         uses: appleboy/ssh-action@master
         env:
-          IMAGE: "vietanhs0817/${{ env.SERVICE }}:${{ env.FORMATTED_BRANCH }}"
+          IMAGE: "vietanhs0817/${{ env.SERVICE }}:${{ env.FORMATTED_BRANCH }}-${{ env.SHORT_SHA }}"
           HOSTS: ${{ secrets[format('{0}_AUTH_HOSTS', env.FORMATTED_BRANCH)]}} 
         with:
           host: ${{ env.HOSTS }}
