@@ -24,12 +24,23 @@ jobs:
     outputs:
       short_sha: ${{ steps.short_sha.outputs.value }}
       formatted_branch: ${{ steps.formatted_branch.outputs.value }}
+      migrate_cmd: ${{ steps.migrate_cmd.outputs.value }}
     steps:
       - name: Short SHA
         shell: bash
         id: short_sha
         run: echo "::set-output name=value::$(echo "$SHA" | head -c7)" 
 
+      - name: Run migrate or not 
+        shell: bash
+        env:
+          COMMIT_MESSAGE: "${{ github.event.client_payload.commit_message }}"
+        id: migrate_cmd
+        run: |
+          if [[ "$COMMIT_MESSAGE" = db* ]] || [[ "$COMMIT_MESSAGE" = migrate* ]]; then
+            echo "::set-output name=value::docker-compose up migrate-up"  
+          fi
+          
       - name: Format current branch
         shell: bash
         id: formatted_branch
@@ -104,7 +115,24 @@ jobs:
     env:
       FORMATTED_BRANCH: ${{ needs.prepare.outputs.formatted_branch }}
       SHORT_SHA: ${{ needs.prepare.outputs.short_sha }}
+      MIGRATE_CMD: ${{ needs.prepare.outputs.migrate_cmd }}
     steps:
+      - name: Migrate 
+        if: needs.prepare.outputs.migrate_cmd != ''
+        uses: appleboy/ssh-action@master
+        env:
+          IMAGE: "vietanhs0817/${{ env.SERVICE }}:${{ env.FORMATTED_BRANCH }}-${{ env.SHORT_SHA }}"
+          HOSTS: ${{ secrets[format('{0}_AUTH_HOSTS', env.FORMATTED_BRANCH)]}} 
+        with:
+          host: ${{ env.HOSTS }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: |
+            cd scp-wa-server
+            sed -i 's|^IMAGE=.*$|IMAGE=${{ env.IMAGE }}|g' .env
+            docker-compose pull
+            ${{ env.MIGRATE_CMD }}
+
       - name: Deploy
         uses: appleboy/ssh-action@master
         env:
@@ -118,7 +146,7 @@ jobs:
             cd scp-wa-server
             sed -i 's|^IMAGE=.*$|IMAGE=${{ env.IMAGE }}|g' .env
             docker-compose pull
-            docker-compose up migrate-up && docker-compose up -d server
+            docker-compose up -d server
 
   notify: 
     name: notify
