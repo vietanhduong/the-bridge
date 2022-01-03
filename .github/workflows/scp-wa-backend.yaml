@@ -96,12 +96,37 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
+  deploy:
+    needs:
+      - prepare
+      - build
+    runs-on: ubuntu-18.04
+    env:
+      FORMATTED_BRANCH: ${{ needs.prepare.outputs.formatted_branch }}
+      SHORT_SHA: ${{ needs.prepare.outputs.short_sha }}
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@master
+        env:
+          IMAGE: "vietanhs0817/${{ env.SERVICE }}:${{ env.FORMATTED_BRANCH }}-${{ env.SHORT_SHA }}"
+          HOSTS: ${{ secrets[format('{0}_AUTH_HOSTS', env.FORMATTED_BRANCH)]}} 
+        with:
+          host: ${{ env.HOSTS }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: |
+            cd scp-wa-server
+            sed -i 's|^IMAGE=.*$|IMAGE=${{ env.IMAGE }}|g' .env
+            docker-compose pull
+            docker-compose up migrate-up && docker-compose up -d server
+
   notify: 
     name: notify
     if: always()
     needs:
       - prepare
       - build
+      - deploy
     uses: vietanhduong/the-bridge/.github/workflows/notify.yaml@main
     with:
       needs_context: ${{ toJSON(needs) }}

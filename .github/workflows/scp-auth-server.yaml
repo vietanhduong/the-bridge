@@ -105,7 +105,7 @@ jobs:
       FORMATTED_BRANCH: ${{ needs.prepare.outputs.formatted_branch }}
       SHORT_SHA: ${{ needs.prepare.outputs.short_sha }}
     steps:
-      - name: 
+      - name: Deploy
         uses: appleboy/ssh-action@master
         env:
           IMAGE: "vietanhs0817/${{ env.SERVICE }}:${{ env.FORMATTED_BRANCH }}-${{ env.SHORT_SHA }}"
