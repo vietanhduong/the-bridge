@@ -118,6 +118,7 @@ jobs:
             cd scp-auth
             sed -i 's|^IMAGE=.*$|IMAGE=${{ env.IMAGE }}|g' .env
             docker-compose pull
+            docker-compose up migrate-up
             docker-compose up -d auth
 
   notify: 
