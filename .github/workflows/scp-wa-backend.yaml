@@ -146,7 +146,6 @@ jobs:
             cd scp-wa-server
             sed -i 's|^IMAGE=.*$|IMAGE=${{ env.IMAGE }}|g' .env
             docker-compose pull
-            docker-compose up migrate-up
             docker-compose up -d server
 
   notify: 
