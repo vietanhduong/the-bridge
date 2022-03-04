@@ -117,22 +117,6 @@ jobs:
       SHORT_SHA: ${{ needs.prepare.outputs.short_sha }}
       MIGRATE_CMD: ${{ needs.prepare.outputs.migrate_cmd }}
     steps:
-      - name: Migrate 
-        if: needs.prepare.outputs.migrate_cmd != ''
-        uses: appleboy/ssh-action@master
-        env:
-          IMAGE: "vietanhs0817/${{ env.SERVICE }}:${{ env.FORMATTED_BRANCH }}-${{ env.SHORT_SHA }}"
-          HOSTS: ${{ secrets[format('{0}_AUTH_HOSTS', env.FORMATTED_BRANCH)]}} 
-        with:
-          host: ${{ env.HOSTS }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.KEY }}
-          script: |
-            cd scp-wa-server
-            sed -i 's|^IMAGE=.*$|IMAGE=${{ env.IMAGE }}|g' .env
-            docker-compose pull
-            ${{ env.MIGRATE_CMD }}
-
       - name: Deploy
         uses: appleboy/ssh-action@master
         env:
@@ -146,7 +130,7 @@ jobs:
             cd tefeco
             sed -i 's|^IMAGE=.*$|IMAGE=${{ env.IMAGE }}|g' .env
             docker-compose pull
-            docker-compose up -d server
+            docker-compose up -d tefeco
 
   notify: 
     name: notify
